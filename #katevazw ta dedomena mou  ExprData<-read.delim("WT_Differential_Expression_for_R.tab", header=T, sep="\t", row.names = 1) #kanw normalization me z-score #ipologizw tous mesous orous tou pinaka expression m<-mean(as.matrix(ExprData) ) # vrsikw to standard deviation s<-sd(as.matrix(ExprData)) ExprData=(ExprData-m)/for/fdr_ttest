@@ -1,0 +1,30 @@
+
+ExprData<-read.delim("WT_Differential_Expression_for_R.tab", header=T, sep="\t", row.names = 1)
+
+
+m<-mean(as.matrix(ExprData) )
+
+s<-sd(as.matrix(ExprData))
+ExprData=(ExprData-m)/s
+ExprData=as.data.frame(ExprData)
+
+Pvalue=list()
+T_Test=list()
+for (i in seq(1,dim(ExprData)[1])){
+  T_Test[[i]]=t.test(ExprData[i,1:4],ExprData[i,5:8],var.equal = TRUE)
+  Pvalue[[i]]=T_Test[[i]][["p.value"]]
+}
+names(Pvalue)=rownames(ExprData)
+
+Corr_FDR <- (p.adjust(Pvalue, method = "fdr",n=length(Pvalue)))
+Corr_FDR1=as.data.frame(Corr_FDR[order(Corr_FDR)])
+#orizw ta 30 Top gonidia me megaliteri simantikotita
+P_value=unlist(Pvalue)
+Data=cbind(ExprData,Corr_FDR1,P_value)
+Top30 <- cbind(Genes = rownames(Corr_FDR1)[1:30])
+
+DataTop30=Data[which(row.names(Data) %in% Top30[,1]), ]
+DataTop30[,9:10]
+
+Top30df=as.data.frame(DataTop30[,1:8])
+heatmap(as.matrix(Top30df))
