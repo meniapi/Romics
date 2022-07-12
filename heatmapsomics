@@ -1,0 +1,63 @@
+
+library (gplots)
+
+V583= read.csv("Differential_Expression.txt",sep = "\t",row.names = "Gene_id")
+
+dim(V583)
+
+rownames(V583)=V583[,1]
+V583=V583[,-1]
+
+bact <- data.matrix(V583)
+
+bact  <- heatmap(bact)
+
+
+#or
+
+library (gplots)
+
+library(vegan)
+
+
+V583= read.csv("Differential_Expression.txt",sep = "\t",row.names = "Gene_id")
+
+dim(V583)
+
+rownames(V583)=V583[,1]
+V583=V583[,-1]
+
+#dinw entoli na ipologizei ton matrix Bray-Curtis anomoiomorfias apo to arxeio 
+data.dist <- vegdist(V583, method = "bray")
+
+
+row.clus <- hclust(data.dist, "aver")
+scaleyellowred <- colorRampPalette(c("orchid4", "cyan3"), space = "rgb")(100)
+
+data.dist.g <- vegdist(t(V583), method = "bray")
+col.clus <- hclust(data.dist.g, "aver")
+
+heatmap(as.matrix(V583), Rowv = as.dendrogram(row.clus), Colv = as.dendrogram(col.clus), col = scaleyellowred, margins = c(10, 3))
+
+
+#otherproject
+library(magrittr)
+library(dplyr)
+library(ggpubr)
+
+difdif= read.table("distance-matrix.tab",sep = "\t", row.names = "X", header= TRUE)
+
+data("difdif")
+head(difdif)
+mds <- difdif %>%
+  dist() %>%          
+  cmdscale() %>%
+  as_tibble()
+colnames(mds) <- c("Dim.1", "Dim.2")
+
+ggscatter(mds, x = "Dim.1", y = "Dim.2", 
+          label = rownames(difdif),
+          size = 1,
+          repel = TRUE)
+
+
