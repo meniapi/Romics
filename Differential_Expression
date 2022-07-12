@@ -1,0 +1,69 @@
+
+library(caret)
+library(matrixStats)
+
+ExprData<-read.delim("WT_Differential_Expression_for_R.tab", header=T, sep="\t", row.names = 1)
+ExprDataMatrix=as.matrix(ExprData)
+
+VarsM = rowVars(ExprDataMatrix[,1:4])
+VarsF= rowVars(ExprDataMatrix[,4:8])
+MeanM=rowMeans(ExprDataMatrix[,1:4])
+MeanF=rowMeans(ExprDataMatrix[,4:8])
+ExprDataMatrix=cbind(ExprDataMatrix,VarsM,VarsF,MeanM,MeanF)
+ExprDataMatrix=as.data.frame(ExprDataMatrix)
+
+Col_M=list()
+Col_F=list()
+for (i in seq(1,dim(ExprDataMatrix)[1])){
+  Col_M[[i]]=rnorm(16,ExprDataMatrix$MeanM,sqrt(ExprDataMatrix$VarsM))
+  Col_F[[i]]=rnorm(16,ExprDataMatrix$MeanF,sqrt(ExprDataMatrix$VarsF))
+}
+Col_M=data.frame(Col_M)
+Col_F=data.frame(Col_F)  
+Col_M=t(data.frame(Col_M))
+Col_F=t(data.frame(Col_F) )
+NewExprData=cbind(ExprDataMatrix[-c(9,10,11,12)],Col_M,Col_F)
+for (i in seq(9,24) ){
+ colnames(NewExprData)[i]=c("WT_M")
+}
+for (i in seq(25,40) ){
+  colnames(NewExprData)[i]=c("WT_F")
+}
+
+NewExprData <- rbind(NewExprData, 0)
+rownames(NewExprData)[nrow(NewExprData)] = "Labels"
+NewExprDataTransp <- as.data.frame(t(NewExprData))
+
+#thetw metavlites gia arsenika ana dio 
+for(i in seq (1, 4, 1)){
+  NewExprDataTransp[i, ncol(NewExprDataTransp)] = "M"
+}
+
+for(i in seq (5, 8, 1)){
+  NewExprDataTransp[i, ncol(NewExprDataTransp)] = "F"
+}
+for(i in seq (9, 24, 1)){
+  NewExprDataTransp[i, ncol(NewExprDataTransp)] = "M"
+}
+for(i in seq (25,40, 1)){
+  NewExprDataTransp[i, ncol(NewExprDataTransp)] = "F"
+}
+NewExprDataTransp$Labels <- as.factor(NewExprDataTransp$Labels)
+
+
+partition <-  createDataPartition(NewExprDataTransp$Labels, p=0.7, list=FALSE)
+trainData <- NewExprDataTransp[partition, ]
+testData  <- NewExprDataTransp[-partition, ]
+
+
+set.seed(100)
+fit <- trainControl(
+  method = "cv", number = 10, savePredictions = TRUE)
+# C5.0
+model_c50 <- train(Labels~., data=trainData, method="C5.0", metric="Accuracy", preProc=c("center", "scale"),
+                   trControl=fit, na.action=na.omit)
+
+c50_pred  <- predict(model_c50, testData)
+
+
+confusionMatrix(c50_pred, testData$Labels)
